@@ -12,7 +12,7 @@
 ## Inspiration
 
 <!-- Make this personal. One or two true sentences about someone in your family is worth more than any statistic. -->
-I'm starting a Master's in Cybersecurity, and the attack that worries me most isn't a zero-day. It's a phone call to an older relative from "Medicare," with a calm voice, a deadline, and a request for a card number. Those scripts are well documented, yet they still work because the person is alone, rushed, and told not to tell anyone. I wanted the moment of doubt, "is this real?", to have someone to ask.
+I'm starting a Master's in Cybersecurity, and the attack that worries me most isn't a zero-day. It's a phone call to an older relative from "Medicare," with a calm voice, a deadline, and a request for a card number. Those scripts are well documented, yet they still work because the person is alone, rushed, and told not to tell anyone. I wanted the moment of doubt, "is this real?", to have someone to ask. Fraud losses reported to the FTC by adults 60+ grew from about $600 million in 2020 to $2.4 billion in 2024.
 
 ## What it does
 
@@ -29,12 +29,12 @@ ScamShield is an Alexa+ integration that protects older adults from phone, text 
 
 - **MCP server** in TypeScript with the official MCP SDK: Streamable HTTP transport, protocol **2025-11-25**, stateless so it scales horizontally. Four tools, server `instructions` that guide the Alexa+ model, and tool annotations.
 - **MCP Apps** verdict card (`ui://scamshield/verdict-card.html`, `text/html;profile=mcp-app`) linked via `_meta.ui.resourceUri`. The card implements the `ui/initialize` handshake, renders `tool-result` notifications, and its "Tell my family" button calls a server tool back through the host.
-- **Hybrid analysis:** a deterministic, explainable scam playbook (11 tactics drawn from FTC/AARP/FBI guidance) plus **Amazon Bedrock** (Converse API, Amazon Nova Lite) as a second opinion. ScamShield keeps the higher risk score.
+- **Hybrid analysis:** a deterministic, explainable scam playbook (15 tactics + 5 supporting signals drawn from FTC/AARP/FBI guidance) plus **Amazon Bedrock** (Converse API, Amazon Nova Lite) as a second opinion. ScamShield keeps the higher risk score.
 - **Privacy first:** SSNs, card/account numbers, Medicare IDs and emails are redacted before reaching Bedrock, DynamoDB, logs or alerts.
 - **Amazon DynamoDB** stores incident memory per household (on-demand, 180-day TTL). **Amazon SNS** delivers family alerts by email.
 - **Resilience:** every AWS dependency has a local fallback, so the experience never breaks.
 - **Alexa+ simulator** web app: an Echo Show–style screen that acts as an MCP Apps host, with voice input (Web Speech API), spoken responses, a "family phone" panel, and a live log of MCP calls.
-- **17 automated tests**, including end-to-end tests over Streamable HTTP with the official MCP client.
+- **96 automated tests**, including end-to-end tests over Streamable HTTP with the official MCP client and a **detection benchmark of 76 real-world messages** (46 scams, 30 ordinary): all scams flagged and no false alarms; 16/18 with zero false alarms on a final batch written after tuning.
 
 ## Challenges we ran into
 

@@ -17,6 +17,11 @@ export interface RedFlag {
   why: string;
   weight: number;
   patterns: RegExp[];
+  /**
+   * Supporting signals (a company name, a family member, a payment) are normal
+   * on their own. They only add risk alongside at least one real scam tactic.
+   */
+  supporting?: boolean;
 }
 
 export const RED_FLAGS: RedFlag[] = [
@@ -32,28 +37,85 @@ export const RED_FLAGS: RedFlag[] = [
     label: "Wants crypto, wire transfer or cash",
     why: "Scammers ask for crypto, wire transfers, cash apps or cash because the money cannot be returned.",
     weight: 40,
-    patterns: [/bitcoin|crypto|btc|usdt/i, /wire (the )?(money|transfer)/i, /bitcoin atm|crypto atm/i, /zelle|venmo|cash ?app/i, /(put|leave) (the )?cash/i, /courier (will|to) (pick|collect)/i],
+    patterns: [/bitcoin|crypto|btc|usdt/i, /wire (the )?(money|transfer)/i, /bitcoin atm|crypto atm/i, /zelle|venmo|cash ?app|western union|moneygram/i, /(put|leave) (the )?cash/i, /pay (him|her|them)? ?(in )?cash|cash (only|today|now|payment)/i, /courier (will|to) (pick|collect)/i],
+  },
+  {
+    id: "safe_account",
+    label: "Tells you to move your money",
+    why: "No real bank or agency will ever ask you to move your money to a 'safe account'.",
+    weight: 55,
+    patterns: [/safe account|secure account|protected account/i, /move (all )?(your|my|the) (money|savings|funds)/i, /(withdraw|take out) (your|my|the) (money|savings|cash)/i],
   },
   {
     id: "asks_for_ids",
     label: "Asks for an ID or card number",
     why: "Real agencies, banks and companies already have your numbers. They never contact you to ask for them or for a code.",
     weight: 35,
-    patterns: [/social security (number|#)/i, /\bssn\b/i, /medicare (card|number|#)/i, /card number/i, /account number/i, /\bpin\b/i, /verification code|one[- ]time code|the code (we|i) (just )?sent/i, /routing number/i],
+    patterns: [/social security (number|#)/i, /\bssn\b/i, /medicare (card|number|#)/i, /card number/i, /account number/i, /\bpin\b/i, /verification code|one[- ]time code|security code|the code (we|i|they) (just )?(sent|texted)|read (back )?the code/i, /routing number/i, /(need|needs|want|wants|asked for|ask for|give them|read them) (my|your) (medicare |social security |bank |card |account )?(number|numbers|info|information|details)\b/i],
+  },
+  {
+    id: "verify_info",
+    label: "Asks you to 'confirm' your details",
+    why: "Real companies don't contact you out of the blue to confirm private details. That's how scammers collect them.",
+    weight: 30,
+    patterns: [/(confirm|verify|update|validate)\b.{0,30}\b(information|info|details|identity|billing|account|payment|card)/i],
+  },
+  {
+    id: "account_problem",
+    label: "Says your account has a problem",
+    why: "Scammers invent a problem with your account or number to scare you into acting fast.",
+    weight: 30,
+    patterns: [
+      /(account|card|number|ssn|benefits)\b.{0,40}\b(suspended|locked|compromised|frozen|limited|hacked|closed|deactivated|on hold)/i,
+      /(suspend|lock|freez|deactivat)\w*.{0,30}(account|card|number|ssn)/i,
+      /payment (failed|declined|didn'?t go through)|suspicious (charge|activity|transaction|login)|unusual (login|activity|sign[- ]?in)|unauthori[sz]ed (charge|purchase|transaction)/i,
+      /(medicare|social security|insurance) card.{0,20}(expir|replace|upgrade)|new (medicare|social security) card/i,
+      /benefits.{0,30}(stop|end|cut)/i,
+      /(license|registration|passport).{0,30}(suspended|revoked|cancel)/i,
+      /money laundering|linked to (a )?(crime|fraud|drug)|used (in|for) (a )?(crime|fraud)|identity (was )?stolen/i,
+      /(charged|billed) (me|you)\b.{0,30}\$|subscription (renewed|was renewed|has renewed)|auto[- ]?renew|renewed (for|at) \$|call (this number|us|them) to cancel|to cancel (the|this) (charge|order|payment)/i,
+    ],
+  },
+  {
+    id: "payment_demand",
+    label: "Wants you to pay or send money",
+    why: "When someone who contacted you first asks for money, slow down and check with someone you trust.",
+    weight: 25,
+    supporting: true,
+    patterns: [
+      /\bpay\b.{0,30}\b(now|today|immediately|fine|fee|fees|toll|bill|taxes|penalty)\b/i,
+      /unless (you|i) pay|pay (it )?(over|on) the phone/i,
+      /send (me |us |them )?(\$|money|cash|\d)/i,
+      /needs? (some )?money|needs? \$\d|\$\d[\d,.]*/i,
+    ],
+  },
+  {
+    id: "delivery_toll",
+    label: "Fake toll or delivery fee",
+    why: "Texts about unpaid tolls or held packages asking for a small payment are one of the most common scams right now.",
+    weight: 40,
+    patterns: [/unpaid toll|toll (bill|balance|fee|violation)|outstanding toll/i, /package.{0,30}(on hold|held|undeliverable|could not be delivered)|redelivery fee|delivery fee|customs fee/i],
   },
   {
     id: "urgency",
     label: "Pushes you to act right now",
     why: "Real organizations give you time. Rushing you is how scammers stop you from thinking or asking someone.",
     weight: 20,
-    patterns: [/right now|immediately|urgent|within (the next )?\d+ (minutes|hours)|today or|last chance|final notice/i],
+    patterns: [/right now|immediately|urgent|within (the next )?\d+ (minutes|hours)|in \d+ (minutes|hours)|today or|last chance|final notice|now to avoid|expires? today|act fast|as soon as possible|today unless|by (tonight|end of (the )?day)|press 1|press one|final notice/i],
   },
   {
     id: "threat",
-    label: "Threatens arrest, fines or losing benefits",
-    why: "Government agencies do not threaten arrest or cut off benefits over the phone.",
+    label: "Threatens arrest, fines or a shutoff",
+    why: "Government agencies and utilities don't threaten arrest or a shutoff over the phone and demand payment.",
     weight: 30,
-    patterns: [/arrest|warrant|police (will|are)|jail|lawsuit|sued/i, /(suspend|cancel|lose|cut off).{0,30}(benefits|medicare|social security|account)/i, /deport/i],
+    patterns: [
+      /arrest|warrant|police (will|are)|jail|lawsuit|sued|deport/i,
+      /(suspend|cancel|lose|cut off).{0,30}(benefits|medicare|social security|account)/i,
+      /shut (off|down)|disconnect(ed|ion)?|turn(ed)? off (your|my|the) (power|electricity|gas|water)/i,
+      /jury duty|missed (a )?court|court date|(pay|owe) (a |the )?fine|late fees?|legal action/i,
+      /owe (back )?taxes|back taxes|tax debt/i,
+      /federal agent|fbi agent|dea agent|special agent/i,
+    ],
   },
   {
     id: "secrecy",
@@ -65,37 +127,93 @@ export const RED_FLAGS: RedFlag[] = [
   {
     id: "grandparent",
     label: "\"Family member in trouble\" story",
-    why: "Scammers pretend to be a grandchild or a lawyer for one, asking for bail or hospital money.",
-    weight: 35,
-    patterns: [/grand(son|daughter|child|kid)/i, /\bbail\b/i, /(car )?accident.{0,40}(money|pay|need)/i, /it'?s me,? (grandma|grandpa|nana)/i],
+    why: "Scammers pretend to be a grandchild or other relative in trouble, asking for bail, a lawyer or hospital money.",
+    weight: 40,
+    patterns: [
+      /\bbail\b|in jail|was arrested|got arrested|in custody|police station/i,
+      /(car )?accident.{0,40}(money|pay|need)|hospital bill|(lawyer|attorney) (will|needs|called|is)/i,
+    ],
+  },
+  {
+    id: "family_claim",
+    label: "Says it's a family member",
+    why: "Scammers pretend to be family, often from a 'new number'. Call the person on the number you already have.",
+    weight: 25,
+    supporting: true,
+    patterns: [
+      /grand(son|daughter|child|kid)|nephew|niece/i,
+      /it'?s me,? (grandma|grandpa|nana|mom|dad)/i, /hi,? (grandma|grandpa|nana|mom|dad)\b/i,
+      /lost my phone|new (phone )?number|changed my number/i,
+    ],
+  },
+  {
+    id: "romance",
+    label: "Online friend asking for money",
+    why: "Someone you've only met online who asks for money is almost always a scammer, even if they seem kind.",
+    weight: 45,
+    patterns: [
+      /(met|meet|chatting|talking|friend).{0,40}(online|facebook|instagram|dating|whatsapp|tiktok|internet)/i,
+      /says (he|she|they) loves? me|in love with me/i,
+      /plane ticket|plane fare|stuck overseas|(military|soldier|oil rig).{0,30}(overseas|abroad)/i,
+    ],
   },
   {
     id: "remote_access",
     label: "Wants control of your computer or phone",
-    why: "Tech companies do not call you about viruses, and nobody should install remote-access apps on your device.",
+    why: "Tech companies don't call you about viruses or errors, and nobody should get remote access to your device.",
     weight: 50,
-    patterns: [/anydesk|teamviewer|remote access|screen ?share|download (an |this )?app/i, /(virus|hacked|infected).{0,40}(computer|phone|account)/i],
+    patterns: [
+      /anydesk|teamviewer|remote access|screen ?share|download (an |this )?app/i,
+      /(virus|hacked|infected|malware).{0,40}(computer|phone|account|pc|laptop)/i,
+      /(computer|pc|laptop|device) (sent|has|is|shows).{0,30}(error|problem|virus|infected)/i,
+      /(let|allow|give) (them|him|her|the caller) (fix|access|into|control|connect)/i,
+      /\b(they|he|she|caller|someone|technician)\b.{0,30}\b(fix|repair|clean)\w*.{0,15}(computer|pc|laptop|device|it) (remotely|for me)/i,
+      /(fix|repair|clean)\w* (it|the computer|my computer|your computer) remotely/i,
+    ],
+  },
+  {
+    id: "door_to_door",
+    label: "Stranger at the door asking for money",
+    why: "Real contractors and utility workers don't show up unannounced and ask for cash on the spot.",
+    weight: 35,
+    supporting: true,
+    patterns: [/(at|to|knocked on) my (front )?door|came to (my|the) (house|home)|door[- ]to[- ]door/i],
   },
   {
     id: "prize",
-    label: "Prize or refund you didn't expect",
-    why: "If you have to pay a fee to get a prize, refund or grant, it is a scam.",
+    label: "Prize, refund or free offer",
+    why: "If you have to pay a fee or give personal details to get a prize, refund or free item, it's a scam.",
     weight: 30,
-    patterns: [/you('ve| have)? won|lottery|sweepstakes|prize/i, /refund|overpaid|owe you money/i, /(pay|fee|tax).{0,30}(to (claim|receive|release))/i, /free (government )?grant/i],
+    patterns: [
+      /you('ve| have)? won|lottery|sweepstakes|prize|publishers clearing house/i,
+      /refund|overpaid|owe you money/i,
+      /(pay|fee|tax).{0,30}(to (claim|receive|release))|(pay|cover) the taxes|processing fee|for processing|handling fee|release fee/i,
+      /free (government )?grant|free (back )?brace|free (medical|genetic|covid|cancer) (equipment|test|screening)|free (gift|iphone|cruise|vacation)/i,
+      /qualif(y|ied) for.{0,40}(grant|loan|refund|money|prize)|government grant|extended warranty/i,
+    ],
   },
   {
     id: "impersonation",
     label: "Claims to be a trusted organization",
     why: "Caller ID and names are easy to fake. Always call back using a number you find yourself.",
     weight: 10,
-    patterns: [/medicare|social security|\bssa\b|\birs\b|treasury|amazon|apple|microsoft|bank|fbi|ftc|sheriff|usps|fedex|ups/i],
+    supporting: true,
+    patterns: [/medicare|social security|\bssa\b|\birs\b|treasury|amazon|apple|microsoft|bank|fbi|ftc|sheriff|usps|fedex|\bups\b|paypal|netflix|electric|utility|power company|gas company|toll|publishers clearing|\bdmv\b|federal|geek squad|wells fargo|chase|paypal|government/i],
   },
   {
     id: "unsolicited_link",
     label: "Text or email with a link to click",
-    why: "Links in surprise messages often lead to fake websites that steal passwords.",
+    why: "Links in surprise messages often lead to fake websites that steal passwords and card numbers.",
     weight: 20,
-    patterns: [/https?:\/\/|bit\.ly|tinyurl|click (the|this) link|tap (the|this) link/i],
+    supporting: true,
+    patterns: [/https?:\/\/|bit\.ly|tinyurl|click (the|this|a) link|tap (the|this|a) link|\b[a-z0-9-]+\.(com|net|org|info|xyz|top|site|online|us|co|link|click|io)\b/i],
+  },
+  {
+    id: "lookalike_site",
+    label: "Website address that looks fake",
+    why: "Scammers use web addresses that look official but have extra words or dashes, like 'amazon-secure-help.com'.",
+    weight: 25,
+    patterns: [/\b[a-z0-9]+-[a-z0-9-]+\.(com|net|org|info|xyz|top|site|online|us|co|link|click|io)\b/i],
   },
 ];
 
@@ -109,4 +227,5 @@ export const ORG_ALIASES: Record<string, RegExp> = {
   tech_support: /microsoft|apple|windows|tech support|geek squad/i,
   law_enforcement: /police|sheriff|fbi|warrant|marshal/i,
   usps: /usps|post(al)? (office|service)|package (delivery|held)/i,
+  utility: /electric (company|bill)|power company|utility|gas company|water company/i,
 };

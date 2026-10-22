@@ -15,7 +15,7 @@ ScamShield is a self-hosted **MCP server** (Model Context Protocol, spec **2025-
 
 ## Why
 
-Older adults are among the most targeted groups for phone, text and email scams, and the losses are often life savings. The scripts are well known (fake Medicare, "your grandson is in jail," IRS gift cards, tech-support viruses), yet in the moment, alone, under pressure, they work.
+Fraud losses reported to the FTC by adults 60 and over rose from about **$600 million in 2020 to $2.4 billion in 2024** ([FTC, Dec 2025](https://www.ftc.gov/news-events/news/press-releases/2025/12/ftc-issues-annual-report-congress-agencys-actions-protect-older-adults)), and the losses are often life savings. The scripts are well known (fake Medicare, "your grandson is in jail," IRS gift cards, tech-support viruses), yet in the moment, alone, under pressure, they work.
 
 The moment of doubt is exactly when someone might say *"Alexa, is this real?"* ScamShield turns that moment into protection:
 
@@ -46,7 +46,7 @@ flowchart LR
 ```
 
 1. **Redact first.** SSNs, card/account numbers, Medicare IDs and emails are replaced with tags before anything reaches a model, a database or an alert.
-2. **Hybrid analysis.** A deterministic, explainable **scam playbook** (11 tactics) always runs. When AWS is on, **Amazon Bedrock** (Converse API, Nova Lite by default) gives a second opinion; ScamShield keeps the **higher** risk, because for a safety tool a false alarm is far cheaper than a missed scam.
+2. **Hybrid analysis.** A deterministic, explainable **scam playbook** (15 scam tactics + 5 supporting signals that only count in combination, so "my grandson visited" is never flagged) always runs. When AWS is on, **Amazon Bedrock** (Converse API, Nova Lite by default) gives a second opinion; ScamShield keeps the **higher** risk, because for a safety tool a false alarm is far cheaper than a missed scam.
 3. **Memory.** Incidents are stored per household in **DynamoDB** (180-day TTL). A repeat of the same impersonation raises the risk and Alexa says *"This is the third time this week someone claimed to be Medicare."*
 4. **Agentic action.** On a likely scam, ScamShield **publishes an alert to SNS** (email to the trusted family member) without being asked. No personal numbers are ever included.
 5. **Visual + voice.** Each tool result carries a `spoken` sentence for Alexa's voice and `structuredContent` for the **MCP Apps** card (large print, one action per row, high contrast, dark-mode aware). The card's **"Tell my family"** button calls a server tool back through the host.
@@ -118,7 +118,13 @@ The server is **stateless** (a fresh MCP server per request), so it scales horiz
 npm test
 ```
 
-17 tests: redaction, playbook verdicts (Medicare, IRS gift cards, grandparent scam, tech support, phishing text, legitimate messages), the Bedrock merge logic (mocked), and an end-to-end suite that talks to the real server over Streamable HTTP with the official MCP client (protocol negotiation, tool list, UI resource, repeat detection, privacy).
+96 tests: redaction, playbook verdicts, conversational speech, the Bedrock merge logic (mocked), an end-to-end suite that talks to the real server over Streamable HTTP with the official MCP client (protocol negotiation, tool list, UI resource, repeat detection, privacy), and a detection benchmark.
+
+### Detection benchmark
+
+`test/benchmark.test.ts` holds **46 real-world scam scripts and 30 ordinary messages** (toll and package texts, "safe account" bank scams, romance scams, fake renewals, door-to-door cash, grandparent scams from a "new number", plus everyday messages like "my grandson visited today" or "the pharmacy says my refill is ready"). The offline rules flag every scam and raise no false alarms on this set.
+
+To keep ourselves honest: the rules were tuned while the set was being built. On the last batch, written after tuning and checked before any further changes, the offline rules scored **16/18 with zero false alarms**. Keyword rules will always miss some brand-new wording, which is why AWS mode adds Amazon Bedrock as a second opinion.
 
 ## Project structure
 

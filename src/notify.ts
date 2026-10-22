@@ -23,19 +23,31 @@ let sns: SNSClient | undefined;
 export function composeAlert(a: FamilyAlert): { subject: string; message: string } {
   const who = config.protectedPersonName;
   const org = a.claimedOrganization ? ` pretending to be ${a.claimedOrganization.replace(/_/g, " ")}` : "";
-  const subject = `ScamShield: ${who} reported a ${a.verdict === "SCAM" ? "likely scam" : "suspicious contact"}`;
-  const lines = [
-    `Hi ${config.trustedContactName},`,
-    ``,
-    `${who} just asked ScamShield about a contact${org}.`,
-    `Verdict: ${a.verdict.replace("_", " ")}.`,
-    a.redFlagLabels.length ? `Warning signs: ${a.redFlagLabels.join("; ")}.` : "",
-    a.note ? `Note: ${a.note}` : "",
-    ``,
-    `ScamShield already told ${who} to hang up and not share any numbers.`,
-    `A quick call from you would help. No personal numbers are included in this message.`,
-  ].filter((l) => l !== "");
-  return { subject: subject.slice(0, 99), message: lines.join("\n") };
+  const risky = a.verdict === "SCAM" || a.verdict === "SUSPICIOUS";
+  const subject = risky
+    ? `ScamShield: ${who} reported a ${a.verdict === "SCAM" ? "likely scam" : "suspicious contact"}`
+    : `ScamShield: ${who} would like you to check in`;
+  const lines = risky
+    ? [
+        `Hi ${config.trustedContactName},`,
+        ``,
+        `${who} just asked ScamShield about a contact${org}.`,
+        `Verdict: ${a.verdict === "SCAM" ? "very likely a scam" : "suspicious"}.`,
+        a.redFlagLabels.length ? `Warning signs: ${a.redFlagLabels.join("; ")}.` : "",
+        a.note ? `Note: ${a.note}` : "",
+        ``,
+        `ScamShield already told ${who} not to send money or share any numbers, and gave the official contact to call instead.`,
+        `A quick call from you would help. No personal numbers are included in this message.`,
+      ]
+    : [
+        `Hi ${config.trustedContactName},`,
+        ``,
+        `${who} asked ScamShield to let you know they'd like you to check in.`,
+        a.note ? `They said: "${a.note}"` : "",
+        ``,
+        `No scam was detected today. A quick call would still be appreciated.`,
+      ];
+  return { subject: subject.slice(0, 99), message: lines.filter((l) => l !== "").join("\n") };
 }
 
 export async function sendFamilyAlert(a: FamilyAlert): Promise<AlertResult> {

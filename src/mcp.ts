@@ -230,10 +230,11 @@ export function createScamShieldServer(store: IncidentStore = sharedStore): McpS
     },
     async ({ note, household_id }) => {
       const householdId = household_id ?? config.defaultHousehold;
-      const recent = (await store.recent(householdId, 1))[0];
+      // Use the most recent risky contact today, not just the latest one (which might be a safe message).
+      const recent = (await store.recent(householdId, 1)).find((i) => i.verdict !== "LIKELY_SAFE");
       const r = await sendFamilyAlert({
         householdId,
-        verdict: recent?.verdict ?? "SUSPICIOUS",
+        verdict: recent?.verdict ?? "CHECK_IN",
         claimedOrganization: prettyOrg(recent?.claimedOrganization),
         redFlagLabels: (recent?.redFlagIds ?? [])
           .map((id) => RED_FLAGS.find((f) => f.id === id)?.label)

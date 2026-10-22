@@ -22,7 +22,7 @@ describe("scam playbook", () => {
     ["The IRS said police will arrest me today unless I pay with Target gift cards", "SCAM"],
     ["My grandson called, he needs bail money, he said don't tell your mom", "SCAM"],
     ["Microsoft called, my computer has a virus, they want me to download AnyDesk", "SCAM"],
-    ["Text: your Amazon account is locked, click this link bit.ly/xyz", "SUSPICIOUS"],
+    ["Text: your Amazon account is locked, click this link bit.ly/xyz", "SCAM"],
     ["The pharmacy texted that my prescription is ready for pickup", "LIKELY_SAFE"],
     ["My bank sent the monthly statement", "LIKELY_SAFE"],
   ];

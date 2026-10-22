@@ -118,7 +118,7 @@
     SUSPICIOUS: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.3"/><path d="M12 17.4v.01"/></svg>',
     LIKELY_SAFE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4 6v5.6c0 4.6 3.3 8.6 8 9.6 4.7-1 8-5 8-9.6V6l-8-3.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/></svg>',
   };
-  const TITLES = { SCAM: "This is very likely a scam", SUSPICIOUS: "Be careful — this looks suspicious", LIKELY_SAFE: "This looks OK" };
+  const TITLES = { SCAM: "This is very likely a scam", SUSPICIOUS: "Be careful — this looks suspicious", LIKELY_SAFE: "No scam signs found" };
   const EYEBROW = { SCAM: "Stop · Don't share anything", SUSPICIOUS: "Pause · Check first", LIKELY_SAFE: "No common scam signs" };
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]);

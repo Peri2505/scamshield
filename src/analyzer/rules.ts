@@ -40,13 +40,10 @@ export function nextStepsFor(verdict: Analysis["verdict"], org?: string, channel
 /** Fast, deterministic, offline analysis using the playbook library. */
 export function analyzeWithRules(text: string, channel?: string): Analysis {
   const hits = RED_FLAGS.filter((f) => f.patterns.some((p) => p.test(text)));
-  // Impersonation alone is not suspicious (people get real calls from their bank),
-  // so it only adds weight when combined with another tactic.
-  const meaningful = hits.filter((h) => h.id !== "impersonation");
-  const score = Math.min(
-    100,
-    hits.reduce((sum, h) => sum + (h.id === "impersonation" && meaningful.length === 0 ? 0 : h.weight), 0),
-  );
+  // Supporting signals (a company name, a relative, a payment, a link) are normal
+  // on their own, so they only add weight when there's at least one real tactic.
+  const meaningful = hits.filter((h) => !h.supporting);
+  const score = meaningful.length ? Math.min(100, hits.reduce((sum, h) => sum + h.weight, 0)) : 0;
   const verdict = verdictFromScore(score);
   const org = detectOrganization(text);
 
@@ -62,7 +59,7 @@ export function analyzeWithRules(text: string, channel?: string): Analysis {
     riskScore: score,
     summary,
     nextSteps: nextStepsFor(verdict, org, channel),
-    redFlags: (meaningful.length ? hits : []).map(({ id, label, why }) => ({ id, label, why })),
+    redFlags: (meaningful.length ? [...meaningful, ...hits.filter((h) => h.supporting)] : []).map(({ id, label, why }) => ({ id, label, why })),
     claimedOrganization: org,
     engine: "rules",
   };
