@@ -42,7 +42,7 @@ const FLAG_SPEECH: Record<string, string> = {
   crypto_or_wire: "Once money goes out by wire or crypto, you can't get it back. That's why scammers ask for it.",
   asks_for_ids: "Real companies and agencies already have your details. They'd never ask for them like this.",
   urgency: "They're rushing you, and that's a trick, so you don't stop and think.",
-  threat: "Nobody from the government is going to arrest you over the phone.",
+  threat: "Real agencies don't threaten you over the phone to make you act fast.",
   secrecy: "When someone tells you to keep it a secret, that's exactly when to tell someone.",
   grandparent: "Scammers often pretend to be a grandchild in trouble, and they can sound very real.",
   remote_access: "Please don't let anyone into your computer. Real tech companies don't call about viruses.",
