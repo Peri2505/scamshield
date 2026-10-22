@@ -12,6 +12,7 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  #voice option { color: #111; }
   body { margin: 0; background: radial-gradient(1200px 600px at 30% -10%, #1b2533 0%, var(--bg) 60%); color: var(--ink); min-height: 100vh; }
   header { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: center; gap: 12px; font-weight: 850; font-size: 20px; letter-spacing: -.01em; }
@@ -70,7 +71,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="#18c4f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4 6v5.6c0 4.6 3.3 8.6 8 9.6 4.7-1 8-5 8-9.6V6l-8-3.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/></svg>
     ScamShield <span style="color:var(--muted);font-weight:600">· Alexa+ simulator</span>
   </div>
-  <div class="pill" id="mode">connecting…</div>
+  <div style="display:flex; gap:10px; align-items:center">
+    <select id="voice" class="pill" title="Alexa's voice" aria-label="Voice" hidden style="background:transparent; color:var(--ink); max-width:220px; font:inherit; font-size:13px"></select>
+    <div class="pill" id="mode">connecting…</div>
+  </div>
 </header>
 
 <main>
@@ -195,13 +199,66 @@ function route(text) {
   return ["check_suspicious_contact", { description: text, channel: /text|link|click/i.test(text) ? "text_message" : /email/i.test(text) ? "email" : "phone_call" }];
 }
 
+// ── Voice: pick the most natural voice this device has ─────────────────────
+// Neural/premium voices sound far more human than the default ones.
+// On a Mac, the best are "Premium"/"Enhanced" voices (System Settings →
+// Accessibility → Spoken Content → System voice → Manage Voices). In Chrome,
+// "Google US English" is a good fallback; in Edge, the "Online (Natural)" ones.
+const VOICE_RANK = [
+  [/natural|neural/i, 100],
+  [/premium/i, 95],
+  [/enhanced/i, 90],
+  [/^Google US English$/i, 80],
+  [/\b(Ava|Zoe|Evan|Nathan|Noelle|Joelle|Allison|Susan|Tom)\b/i, 70],
+  [/\b(Samantha|Aria|Jenny|Guy)\b/i, 60],
+  [/^Google UK English Female$/i, 50],
+];
+const voiceScore = (v) => {
+  if (!/^en(-|_|$)/i.test(v.lang)) return -1;
+  const r = VOICE_RANK.find(([re]) => re.test(v.name));
+  return (r ? r[1] : 10) + (/en[-_]US/i.test(v.lang) ? 3 : 0);
+};
+let chosenVoice = null;
+function loadVoices() {
+  const voices = speechSynthesis.getVoices().filter((v) => voiceScore(v) >= 0).sort((a, b) => voiceScore(b) - voiceScore(a));
+  if (!voices.length) return;
+  let saved = null; try { saved = localStorage.getItem("scamshield-voice"); } catch {}
+  chosenVoice = voices.find((v) => v.name === saved) || voices[0];
+  $("voice").innerHTML = voices.map((v) => `<option ${v === chosenVoice ? "selected" : ""}>${v.name}</option>`).join("");
+  $("voice").hidden = false;
+}
+if ("speechSynthesis" in window) {
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+document.addEventListener("change", (e) => {
+  if (e.target.id !== "voice") return;
+  chosenVoice = speechSynthesis.getVoices().find((v) => v.name === e.target.value) || chosenVoice;
+  try { localStorage.setItem("scamshield-voice", chosenVoice.name); } catch {}
+  speak("Hi, I'm here whenever you need me.");
+});
+
+// Speak sentence by sentence with short pauses: sounds more like a person,
+// and avoids Chrome cutting off long utterances.
+let speechRun = 0;
 function speak(text) {
-  if (!("speechSynthesis" in window)) return;
+  if (!("speechSynthesis" in window) || !text) return;
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text); u.rate = 0.92; u.pitch = 1.0;
-  u.onstart = () => $("speaking").classList.add("on");
-  u.onend = () => $("speaking").classList.remove("on");
-  speechSynthesis.speak(u);
+  const run = ++speechRun;
+  const sentences = text.match(/[^.!?]+[.!?]+["”]?|\S[^.!?]*$/g) || [text];
+  $("speaking").classList.add("on");
+  const next = (i) => {
+    if (run !== speechRun) return;
+    if (i >= sentences.length) { $("speaking").classList.remove("on"); return; }
+    const u = new SpeechSynthesisUtterance(sentences[i].trim());
+    if (chosenVoice) u.voice = chosenVoice;
+    u.rate = /natural|neural|premium|enhanced|google/i.test(chosenVoice?.name || "") ? 1.0 : 0.95;
+    u.pitch = 1.0;
+    u.onend = () => setTimeout(() => next(i + 1), /\?$/.test(sentences[i]) ? 380 : 260);
+    u.onerror = () => next(i + 1);
+    speechSynthesis.speak(u);
+  };
+  next(0);
 }
 
 async function ask(text) {

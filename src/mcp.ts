@@ -11,6 +11,7 @@ import { config } from "./config.js";
 import { findOfficialContact, OFFICIAL_CONTACTS } from "./contacts.js";
 import { sendFamilyAlert } from "./notify.js";
 import { createStore, type IncidentStore } from "./store.js";
+import { composeSpeech } from "./voice.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** MCP Apps (SEP-1865) UI resource: rendered by the host in a sandboxed iframe. */
@@ -142,22 +143,16 @@ export function createScamShieldServer(store: IncidentStore = sharedStore): McpS
         familyAlerted,
       });
 
-      const spokenParts = [
-        verdict === "SCAM"
-          ? "Please stop. This is very likely a scam."
-          : verdict === "SUSPICIOUS"
-            ? "Let's be careful. This has some warning signs of a scam."
-            : "This doesn't look like a common scam, but stay careful.",
-        a.redFlags.filter((f) => f.id !== "impersonation")[0]?.why,
-        repeatNote,
-        official?.phone && verdict !== "LIKELY_SAFE"
-          ? `If you want to check, ${channel === "text_message" || channel === "email" ? "don't use the message. Call" : "hang up and call"} ${official.name} yourself at ${official.phone.replace(/\s*\(.*\)/, "")}.`
-          : official?.website && verdict !== "LIKELY_SAFE"
-            ? `If you want to check, go to ${official.website.split(" ")[0]} yourself instead of using the message.`
-            : undefined,
-        familyAlerted ? `I've let ${config.trustedContactName} know, so they can check in with you.` : undefined,
-      ].filter(Boolean);
-      const spoken = spokenParts.join(" ");
+      const spoken = composeSpeech({
+        verdict,
+        flagIds: a.redFlags.map((f) => f.id).filter((id) => id !== "impersonation"),
+        orgName: prettyOrg(a.claimedOrganization),
+        repeatCount: repeatNote ? sameOrgOrTactic.length : 0,
+        official,
+        written: channel === "text_message" || channel === "email",
+        familyAlerted,
+        trustedContactName: config.trustedContactName,
+      });
 
       const result = {
         verdict,
@@ -246,7 +241,7 @@ export function createScamShieldServer(store: IncidentStore = sharedStore): McpS
         note: note ? note.replace(/\d{4,}/g, "[number removed]") : undefined,
       });
       return {
-        content: [{ type: "text", text: `Done. I've let ${config.trustedContactName} know. They'll reach out to you soon.` }],
+        content: [{ type: "text", text: `Okay, done. I've let ${config.trustedContactName} know, and they'll reach out to you soon.` }],
         structuredContent: { ...r, trustedContactName: config.trustedContactName },
       };
     },
@@ -276,11 +271,13 @@ export function createScamShieldServer(store: IncidentStore = sharedStore): McpS
         byOrg.set(k, (byOrg.get(k) ?? 0) + 1);
       }
       const top = [...byOrg.entries()].sort((a, b) => b[1] - a[1]);
+      const period = days === 7 ? "this week" : `in the last ${days} days`;
+      const list = top.map(([org, n]) => (org === "unknown caller" ? `${n} from someone who didn't say who they were` : `${n} pretending to be ${org}`));
+      const joined = list.length > 1 ? `${list.slice(0, -1).join(", ")}, and ${list[list.length - 1]}` : list[0];
       const text = risky.length
-        ? `In the last ${days} days there were ${risky.length} suspicious contacts. ` +
-          top.map(([org, n]) => `${n} from someone claiming to be ${org}`).join(", ") +
-          ". None of them should be called back on the number they gave."
-        : `No suspicious contacts in the last ${days} days. Nice work staying alert.`;
+        ? `${period[0].toUpperCase()}${period.slice(1)}, there ${risky.length === 1 ? "was one call or message" : `were ${risky.length} calls or messages`} that looked suspicious: ${joined}. ` +
+          "Please don't call any of them back on the number they gave you."
+        : `Nothing suspicious ${period}. Nice work staying alert.`;
       return {
         content: [{ type: "text", text }],
         structuredContent: {
