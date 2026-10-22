@@ -1,0 +1,48 @@
+{
+  "name": "scamshield",
+  "version": "1.0.0",
+  "description": "A family fraud firewall for Alexa+: an MCP server (Streamable HTTP, spec 2025-11-25) that spots phone, text and email scams targeting older adults, remembers repeat attempts and alerts family.",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc && mkdir -p dist/ui && cp src/ui/*.html dist/ui/",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "inspector": "npx @modelcontextprotocol/inspector"
+  },
+  "keywords": [
+    "alexa",
+    "alexa-plus",
+    "mcp",
+    "model-context-protocol",
+    "mcp-apps",
+    "scam",
+    "fraud",
+    "elder-care",
+    "aws",
+    "bedrock"
+  ],
+  "author": "Aiperi Moldobaeva",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1155.0",
+    "@aws-sdk/client-dynamodb": "^3.1155.0",
+    "@aws-sdk/client-sns": "^3.1155.0",
+    "@aws-sdk/lib-dynamodb": "^3.1155.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  }
+}

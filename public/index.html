@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ScamShield · Alexa+ simulator</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161a21; --line: #262c36; --ink: #eef1f5; --muted: #8d97a6;
+    --alexa: #18c4f2; --scam: #ff6b5e; --warn: #ffbf47; --safe: #4fd18b;
+    font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: radial-gradient(1200px 600px at 30% -10%, #1b2533 0%, var(--bg) 60%); color: var(--ink); min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 850; font-size: 20px; letter-spacing: -.01em; }
+  .brand svg { width: 30px; height: 30px; }
+  .pill { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+  .pill b { color: var(--ink); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 26px; padding: 26px 28px 40px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+
+  /* Echo Show-like device */
+  .device { background: #050608; border-radius: 34px; padding: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.5), inset 0 0 0 2px #1f242c; }
+  .screen { background: #f4f2ee; border-radius: 20px; aspect-ratio: 16 / 10; overflow: hidden; position: relative; display: grid; }
+  .screen iframe { width: 100%; height: 100%; border: 0; background: transparent; }
+  .idle { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: #222; padding: 30px; background: linear-gradient(160deg, #f6f3ec, #e9eef5); }
+  .idle .clock { font-size: clamp(54px, 9vw, 110px); font-weight: 300; letter-spacing: -.03em; }
+  .idle p { font-size: 22px; color: #555; margin: 4px 0 0; }
+  .speaking { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: linear-gradient(90deg, transparent, var(--alexa), transparent); opacity: 0; transition: opacity .3s; }
+  .speaking.on { opacity: 1; animation: glow 1.4s ease-in-out infinite; }
+  @keyframes glow { 50% { filter: brightness(1.6); } }
+
+  .controls { margin-top: 18px; display: grid; gap: 12px; }
+  .ask { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; }
+  .mic { width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--alexa); color: #001018; cursor: pointer; display: grid; place-items: center; }
+  .mic.listening { box-shadow: 0 0 0 0 rgba(24,196,242,.6); animation: ping 1.2s infinite; }
+  @keyframes ping { to { box-shadow: 0 0 0 18px rgba(24,196,242,0); } }
+  .mic svg { width: 26px; height: 26px; }
+  input[type=text] { font: inherit; font-size: 18px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 0 18px; min-height: 58px; }
+  input[type=text]:focus { outline: 2px solid var(--alexa); border-color: transparent; }
+  .send { font: inherit; font-weight: 800; font-size: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 0 22px; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font: inherit; font-size: 14px; background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+  .chip:hover { color: var(--ink); border-color: var(--muted); }
+  .transcript { font-size: 17px; line-height: 1.45; color: var(--muted); min-height: 50px; }
+  .transcript .you { color: var(--ink); }
+  .transcript .alexa { color: var(--alexa); }
+
+  aside { display: grid; gap: 18px; align-content: start; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+  .box h3 { margin: 0; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .phone { padding: 14px; display: grid; gap: 10px; max-height: 330px; overflow: auto; }
+  .notif { background: #222834; border-radius: 16px; padding: 12px 14px; animation: drop .45s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes drop { from { transform: translateY(-12px); opacity: 0; } }
+  .notif .app { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .notif .subj { font-weight: 800; margin: 4px 0; font-size: 15px; }
+  .notif pre { white-space: pre-wrap; margin: 0; font: inherit; font-size: 13.5px; color: #c9d1dc; line-height: 1.4; }
+  .empty { color: var(--muted); font-size: 14px; padding: 6px 4px; }
+  .log { font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace; padding: 12px 16px; max-height: 320px; overflow: auto; color: #b8c2cf; }
+  .log .row { padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .log .m { color: var(--alexa); font-weight: 700; }
+  .log .ok { color: var(--safe); } .log .ms { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#18c4f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4 6v5.6c0 4.6 3.3 8.6 8 9.6 4.7-1 8-5 8-9.6V6l-8-3.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/></svg>
+    ScamShield <span style="color:var(--muted);font-weight:600">· Alexa+ simulator</span>
+  </div>
+  <div class="pill" id="mode">connecting…</div>
+</header>
+
+<main>
+  <section>
+    <div class="device">
+      <div class="screen" id="screen">
+        <div class="idle" id="idle">
+          <div><div class="clock" id="clock">9:41</div><p>Try: “Alexa, someone from Medicare called…”</p></div>
+        </div>
+        <iframe id="view" title="ScamShield card" sandbox="allow-scripts" hidden></iframe>
+        <div class="speaking" id="speaking"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="ask">
+        <button class="mic" id="mic" title="Hold a conversation (uses your browser's speech recognition)" aria-label="Speak">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+        </button>
+        <input type="text" id="q" placeholder="Tell Alexa what happened…" autocomplete="off" />
+        <button class="send" id="send">Ask</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="transcript" id="transcript"></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="box">
+      <h3><span>📱 Family member's phone</span><span id="outboxMode"></span></h3>
+      <div class="phone" id="phone"><div class="empty">No alerts yet. Alerts appear here when ScamShield texts the family.</div></div>
+    </div>
+    <div class="box">
+      <h3><span>Under the hood · MCP</span><span>Streamable HTTP</span></h3>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const SCENARIOS = [
+  ["Medicare call", "A man from Medicare called and said my card is expiring. He needs my Medicare number right now or I lose my benefits."],
+  ["Grandson in jail", "My grandson called crying, he was in a car accident and needs bail money. He said don't tell your mom. A lawyer will pick up cash."],
+  ["Gift card 'IRS'", "The IRS said I owe back taxes and police will arrest me today unless I pay with Target gift cards."],
+  ["Amazon text", "I got a text: Your Amazon account is locked, click this link bit.ly/amz-secure to verify your card number."],
+  ["Pharmacy (real)", "The pharmacy texted that my prescription is ready for pickup at the usual store."],
+  ["What happened this week?", "What suspicious calls did I get this week?"],
+  ["Tell my family", "Please tell my granddaughter, I'm worried."],
+];
+
+const $ = (id) => document.getElementById(id);
+const log = (method, detail, ms) => {
+  const row = document.createElement("div"); row.className = "row";
+  row.innerHTML = `<span class="m">${method}</span> ${detail}${ms != null ? ` <span class="ms">${ms}ms</span>` : ""}`;
+  $("log").prepend(row);
+};
+
+// ── Tiny MCP client over Streamable HTTP ────────────────────────────────────
+let rpcId = 1;
+async function rpc(method, params) {
+  const t0 = performance.now();
+  const res = await fetch("/mcp", {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json, text/event-stream", "mcp-protocol-version": "2025-11-25" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }),
+  });
+  const body = await res.json();
+  const ms = Math.round(performance.now() - t0);
+  if (body.error) { log(method, `<span style="color:var(--scam)">${body.error.message}</span>`, ms); throw body.error; }
+  log(method, params?.name ? `→ <b>${params.name}</b> <span class="ok">✓</span>` : `<span class="ok">✓</span>`, ms);
+  return body.result;
+}
+
+let cardHtml = null;
+let toolUi = {};
+async function boot() {
+  const init = await rpc("initialize", { protocolVersion: "2025-11-25", capabilities: { extensions: { "io.modelcontextprotocol/ui": { mimeTypes: ["text/html;profile=mcp-app"] } } }, clientInfo: { name: "scamshield-alexa-sim", version: "1.0.0" } });
+  const tools = await rpc("tools/list", {});
+  for (const t of tools.tools) toolUi[t.name] = t._meta?.ui?.resourceUri;
+  log("server", `${init.serverInfo.title} v${init.serverInfo.version} · ${tools.tools.length} tools`);
+  const health = await (await fetch("/health")).json();
+  $("mode").innerHTML = health.mode === "aws" ? `<b>AWS mode</b> · Bedrock ${health.bedrockModel} · DynamoDB · SNS` : `<b>Local mode</b> · free, no AWS calls`;
+}
+
+async function getCardHtml(uri) {
+  if (cardHtml) return cardHtml;
+  const r = await rpc("resources/read", { uri });
+  cardHtml = r.contents[0].text;
+  return cardHtml;
+}
+
+// ── Minimal MCP Apps host bridge for the iframe ─────────────────────────────
+let viewReady = null, lastResult = null;
+window.addEventListener("message", async (e) => {
+  if (e.source !== $("view").contentWindow) return;
+  const m = e.data; if (!m || m.jsonrpc !== "2.0") return;
+  const reply = (result) => $("view").contentWindow.postMessage({ jsonrpc: "2.0", id: m.id, result }, "*");
+  if (m.method === "ui/initialize") {
+    reply({ protocolVersion: "2026-01-26", hostInfo: { name: "scamshield-alexa-sim", version: "1.0.0" }, hostCapabilities: { serverTools: {} }, hostContext: { theme: "light", displayMode: "inline", platform: "web" } });
+  } else if (m.method === "ui/notifications/initialized") {
+    viewReady?.();
+  } else if (m.method === "tools/call") {
+    try { const r = await rpc("tools/call", m.params); reply(r); refreshOutbox(); }
+    catch (err) { $("view").contentWindow.postMessage({ jsonrpc: "2.0", id: m.id, error: err }, "*"); }
+  }
+});
+
+async function showCard(uri, result) {
+  const html = await getCardHtml(uri);
+  const view = $("view");
+  const ready = new Promise((r) => (viewReady = r));
+  if (!view.dataset.loaded) { view.srcdoc = html; view.dataset.loaded = "1"; view.hidden = false; $("idle").hidden = true; await ready; }
+  view.contentWindow.postMessage({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: result }, "*");
+}
+
+// ── Intent routing (in real Alexa+, the LLM picks the tool) ─────────────────
+function route(text) {
+  if (/what (suspicious|happened)|this week|recent(ly)?|history/i.test(text)) return ["get_incident_history", { days: 7 }];
+  if (/^(please )?(tell|let|alert|notify) (my )?(family|daughter|son|grand|aiperi)/i.test(text)) return ["alert_trusted_family", { note: text }];
+  const m = text.match(/(?:real|official) number for (.+)|what(?:'s| is) the number for (.+)/i);
+  if (m) return ["get_official_contact", { organization: (m[1] || m[2]).replace(/[?.!]/g, "") }];
+  return ["check_suspicious_contact", { description: text, channel: /text|link|click/i.test(text) ? "text_message" : /email/i.test(text) ? "email" : "phone_call" }];
+}
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); u.rate = 0.92; u.pitch = 1.0;
+  u.onstart = () => $("speaking").classList.add("on");
+  u.onend = () => $("speaking").classList.remove("on");
+  speechSynthesis.speak(u);
+}
+
+async function ask(text) {
+  if (!text.trim()) return;
+  $("transcript").innerHTML = `<div class="you">“${text.replace(/</g, "&lt;")}”</div>`;
+  const [name, args] = route(text);
+  const result = await rpc("tools/call", { name, arguments: args });
+  const spoken = result.structuredContent?.spoken || result.content?.[0]?.text || "";
+  $("transcript").innerHTML += `<div class="alexa">Alexa: ${spoken.replace(/</g, "&lt;")}</div>`;
+  speak(spoken);
+  const uri = toolUi[name] || (name === "get_incident_history" ? toolUi.check_suspicious_contact : null);
+  if (uri && result.structuredContent) await showCard(uri, result);
+  refreshOutbox();
+}
+
+// ── Family phone (local outbox or SNS) ──────────────────────────────────────
+let seen = 0;
+async function refreshOutbox() {
+  const r = await (await fetch("/demo/outbox")).json();
+  $("outboxMode").textContent = r.mode === "sns" ? "via Amazon SNS" : "local";
+  if (!r.items.length || r.items.length === seen) return;
+  seen = r.items.length;
+  $("phone").innerHTML = r.items.map((i) => `<div class="notif"><div class="app"><span>✉️ ScamShield</span><span>${new Date(i.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span></div><div class="subj">${i.subject}</div><pre>${i.message.replace(/</g, "&lt;")}</pre></div>`).join("");
+}
+
+// ── Voice input (Web Speech API) ────────────────────────────────────────────
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+$("mic").addEventListener("click", () => {
+  if (!SR) { $("q").focus(); $("q").placeholder = "Voice input isn't supported in this browser — type instead"; return; }
+  const rec = new SR(); rec.lang = "en-US"; rec.interimResults = true;
+  $("mic").classList.add("listening");
+  rec.onresult = (e) => { const t = [...e.results].map((r) => r[0].transcript).join(""); $("q").value = t.replace(/^alexa,?\s*/i, ""); };
+  rec.onend = () => { $("mic").classList.remove("listening"); ask($("q").value); $("q").value = ""; };
+  rec.start();
+});
+$("send").addEventListener("click", () => { ask($("q").value); $("q").value = ""; });
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") { ask($("q").value); $("q").value = ""; } });
+$("chips").innerHTML = SCENARIOS.map(([l], i) => `<button class="chip" data-i="${i}">${l}</button>`).join("");
+$("chips").addEventListener("click", (e) => { const i = e.target.dataset?.i; if (i != null) ask(SCENARIOS[i][1]); });
+
+const tick = () => ($("clock").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+tick(); setInterval(tick, 10000);
+boot().then(refreshOutbox).catch((e) => ($("mode").textContent = "server not reachable"));
+</script>
+</body>
+</html>
