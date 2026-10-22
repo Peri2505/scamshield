@@ -67,6 +67,20 @@ describe("ScamShield MCP server over Streamable HTTP", () => {
     expect(r.structuredContent.redactedText).not.toMatch(/4111|6789/);
   });
 
+  it("rejects empty or whitespace-only descriptions", async () => {
+    const r: any = await client.callTool({ name: "check_suspicious_contact", arguments: { description: "    " } });
+    expect(r.isError).toBe(true);
+  });
+
+  it("answers malformed JSON with a JSON-RPC parse error, not a stack trace", async () => {
+    const url = (client as any)._transport._url as URL;
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: "{not json" });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe(-32700);
+    expect(JSON.stringify(body)).not.toMatch(/not json|at JSON\.parse/);
+  });
+
   it("looks up official contacts", async () => {
     const r: any = await client.callTool({ name: "get_official_contact", arguments: { organization: "irs" } });
     expect(r.structuredContent.contact.phone).toBe("1-800-829-1040");

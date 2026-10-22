@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { analyzeWithRules } from "../src/analyzer/rules.js";
 
 /**
- * Detection benchmark: 49 real-world scam scripts and 35 ordinary messages
+ * Detection benchmark: 54 real-world scam scripts and 42 ordinary messages
  * an older adult might ask about. Written from FTC / AARP / FBI IC3 scam patterns.
  * This runs the offline rules only. With AWS on, Amazon Bedrock adds a second opinion
  * for wording the rules have never seen.
@@ -57,6 +57,11 @@ const SCAMS: string[] = [
   "A woman from my church group says she has a great investment that doubles your money in a week, but I have to decide tonight",
   "A man said he's from the hospital and my son was in a crash, they need my credit card to start surgery",
   "Someone called saying my Costco membership will be canceled unless I confirm the card on file",
+  "A caller said he's from Apple and my iCloud account was used to buy something, he wants me to go to Target and buy cards to reverse it",
+  "A recorded voice said there's a warrant for my arrest from the IRS, press 1 to speak to an officer",
+  "A caller from Apple says my iCloud was used to buy something and I must go to Target and buy cards to reverse it",
+  "A man says he is with the power company and will cut my electricity in an hour unless I pay with a gift card",
+  "He told me to read him the numbers on the back of the cards",
 ];
 
 const ORDINARY: string[] = [
@@ -95,6 +100,13 @@ const ORDINARY: string[] = [
   "My son is having surgery next week, the hospital said I should bring my insurance card",
   "The doctor office called to say my copay for the visit is $20",
   "The hospital mailed a bill for my knee surgery",
+  "My pastor called to ask if I need a ride to church on Sunday",
+  "Medicare open enrollment letter came in the mail, it says to call 1-800-MEDICARE with questions",
+  "I bought gift cards for my grandkids for Christmas",
+  "I went to Target to buy birthday cards",
+  "My daughter gave me a gift card for my birthday",
+  "I need to go to Target and buy birthday cards for the kids",
+  "I have to buy a gift card for my niece",
 ];
 
 describe("benchmark: scams are flagged", () => {

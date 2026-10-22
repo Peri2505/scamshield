@@ -34,7 +34,7 @@ ScamShield is an Alexa+ integration that protects older adults from phone, text 
 - **Amazon DynamoDB** stores incident memory per household (on-demand, 180-day TTL). **Amazon SNS** delivers family alerts by email.
 - **Resilience:** every AWS dependency has a local fallback, so the experience never breaks.
 - **Alexa+ simulator** web app: an Echo Show–style screen that acts as an MCP Apps host, with voice input (Web Speech API), spoken responses, a "family phone" panel, and a live log of MCP calls.
-- **105 automated tests**, including end-to-end tests over Streamable HTTP with the official MCP client and a **detection benchmark of 84 real-world messages** (49 scams, 35 ordinary): all scams flagged and no false alarms; 16/18 with zero false alarms on a final batch written after tuning.
+- **119 automated tests**, including end-to-end tests over Streamable HTTP with the official MCP client and a **detection benchmark of 96 real-world messages** (54 scams, 42 ordinary): all scams flagged and no false alarms; 16/18 with zero false alarms on a final batch written after tuning.
 
 ## Challenges we ran into
 

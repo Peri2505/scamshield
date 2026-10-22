@@ -79,7 +79,9 @@ export function createScamShieldServer(store: IncidentStore = sharedStore): McpS
       inputSchema: {
         description: z
           .string()
-          .min(3)
+          .trim()
+          .min(3, "Please describe what happened in a few words.")
+          .max(5000, "That's a lot of text. Please describe the main part of the call or message.")
           .describe("What happened, in the user's own words, e.g. 'A man from Medicare called and wants my card number'."),
         channel: z
           .enum(["phone_call", "voicemail", "text_message", "email", "in_person", "other"])

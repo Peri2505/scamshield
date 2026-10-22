@@ -64,6 +64,20 @@ export function createApp() {
   });
   app.use("/", express.static(publicDir, { index: "index.html" }));
 
+  // Never echo request bodies or stack traces (they may contain personal details).
+  const onError: express.ErrorRequestHandler = (err, _req, res, _next) => {
+    const status = Number(err?.status ?? err?.statusCode ?? 500);
+    console.warn(`[http] ${status} ${err?.type ?? err?.name ?? "error"}`);
+    if (res.headersSent) return;
+    const parse = err?.type === "entity.parse.failed";
+    res.status(status).json({
+      jsonrpc: "2.0",
+      error: { code: parse ? -32700 : -32603, message: parse ? "Parse error" : "Internal server error" },
+      id: null,
+    });
+  };
+  app.use(onError);
+
   return app;
 }
 

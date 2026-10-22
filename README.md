@@ -114,6 +114,7 @@ The server is **stateless** (a fresh MCP server per request), so it scales horiz
 - **No numbers in alerts:** family emails contain the verdict and warning signs, never IDs.
 - **Endpoint hardening:** optional bearer-token auth (constant-time compare), DNS-rebinding protection via the MCP SDK's host validation, JSON-only stateless transport.
 - **Fail safe:** every AWS dependency has a local fallback; the higher of the two risk scores wins.
+- **Input hardening:** descriptions are trimmed and length-limited (3–5,000 characters); malformed JSON gets a JSON-RPC parse error with no stack trace or echoed content; the Bedrock prompt treats the message as untrusted data, so "ignore your instructions" tricks don't work.
 - **Verified contacts only:** ScamShield never repeats a number supplied by the caller.
 
 ## Tests
@@ -122,11 +123,11 @@ The server is **stateless** (a fresh MCP server per request), so it scales horiz
 npm test
 ```
 
-105 tests: redaction, playbook verdicts, conversational speech, the Bedrock merge logic (mocked), an end-to-end suite that talks to the real server over Streamable HTTP with the official MCP client (protocol negotiation, tool list, UI resource, repeat detection, privacy), and a detection benchmark.
+119 tests: redaction, playbook verdicts, conversational speech, the Bedrock merge logic (mocked), an end-to-end suite that talks to the real server over Streamable HTTP with the official MCP client (protocol negotiation, tool list, UI resource, repeat detection, privacy), and a detection benchmark.
 
 ### Detection benchmark
 
-`test/benchmark.test.ts` holds **49 real-world scam scripts and 35 ordinary messages** (toll and package texts, "safe account" bank scams, romance and fake-investment scams, "hospital emergency" card requests, fake renewals, door-to-door cash, grandparent scams from a "new number", plus everyday messages like "my grandson visited today" or "the pharmacy says my refill is ready"). The offline rules flag every scam and raise no false alarms on this set.
+`test/benchmark.test.ts` holds **54 real-world scam scripts and 42 ordinary messages** (toll and package texts, "safe account" bank scams, romance and fake-investment scams, "hospital emergency" card requests, fake renewals, door-to-door cash, grandparent scams from a "new number", plus everyday messages like "my grandson visited today", "I bought gift cards for my grandkids" or "the pharmacy says my refill is ready"). The offline rules flag every scam and raise no false alarms on this set.
 
 To keep ourselves honest: the rules were tuned while the set was being built. On the last batch, written after tuning and checked before any further changes, the offline rules scored **16/18 with zero false alarms**. Keyword rules will always miss some brand-new wording, which is why AWS mode adds Amazon Bedrock as a second opinion.
 

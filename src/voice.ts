@@ -20,7 +20,7 @@ const pick = <T extends string>(xs: T[]): T => {
 const PRIORITY = [
   "safe_account", "emergency_payment", "grandparent", "romance", "investment", "gift_cards", "remote_access", "crypto_or_wire", "delivery_toll",
   "door_to_door", "asks_for_ids", "threat", "account_problem", "verify_info", "secrecy", "prize", "lookalike_site",
-  "unsolicited_link", "family_claim", "payment_demand", "urgency",
+  "unsolicited_link", "gift_card_mention", "family_claim", "payment_demand", "urgency",
 ];
 
 const OPENERS: Record<Verdict, string[]> = {

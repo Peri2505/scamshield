@@ -28,9 +28,24 @@ export const RED_FLAGS: RedFlag[] = [
   {
     id: "gift_cards",
     label: "Wants payment in gift cards",
-    why: "No real government office or company asks you to pay with gift cards.",
-    weight: 45,
-    patterns: [/gift ?cards?/i, /google play card/i, /itunes card/i, /apple card(s)? from the store/i, /target card|walmart card|steam card/i],
+    why: "No real government office or company asks you to pay with gift cards. That's always a scam.",
+    weight: 60,
+    patterns: [
+      /\b(pay|paying|payment|paid)\b.{0,30}\b(gift ?cards?|(google play|itunes|steam|apple|amazon) ?cards?)/i,
+      /(gift ?cards?).{0,40}\b(to pay|as payment|for (the |my )?(fine|bail|fee|fees|taxes|bill|warrant))/i,
+      /\b((wants?|wanted|asked|asks|told|tells|needs?|needed|said)\s+(me|us|grandma|grandpa|mom|dad|her|him)|(i|we)\s+(must|have to|had to|need to|should))\s+(to\s+)?(go\s+to\s+[\w' ]{1,25}?\s+(and\s+)?)?(buy|get|purchase|send|pick up)\b.{0,40}\b(gift ?cards?|(?<!(birthday|greeting|christmas|holiday|thank[- ]you|get[- ]well|playing|business|sympathy|wedding|anniversary) )cards|vouchers|prepaid)\b.{0,60}\b(to (reverse|fix|cancel|pay|stop|protect|clear|unlock|release)|for (him|her|them|the (fine|fee|bail|taxes))|so (he|she|they|it))/i,
+      /\b(wants?|wanted|asked|asks|told|tells|needs?|needed|said)\s+(me|us|grandma|grandpa|mom|dad|her|him)\s+to\s+(go\s+to\s+[\w' ]{1,25}?\s+(and\s+)?)?(buy|get|purchase|send)\b.{0,30}\bgift ?cards?/i,
+      /\bsend (him|her|them|me|us)? ?(the |some )?gift ?cards?/i,
+      /(numbers?|codes?|pins?) (on|from|off) the (back of the )?(gift )?cards?|scratch (off )?the back/i,
+    ],
+  },
+  {
+    id: "gift_card_mention",
+    label: "Mentions gift cards",
+    why: "Gift cards are fine as presents, but never as a way to pay someone who contacted you.",
+    weight: 25,
+    supporting: true,
+    patterns: [/gift ?cards?|google play card|itunes card|steam card/i],
   },
   {
     id: "crypto_or_wire",
