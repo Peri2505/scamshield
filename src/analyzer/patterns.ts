@@ -68,6 +68,7 @@ export const RED_FLAGS: RedFlag[] = [
     patterns: [
       /(account|card|number|ssn|benefits)\b.{0,40}\b(suspended|locked|compromised|frozen|limited|hacked|closed|deactivated|on hold)/i,
       /(suspend|lock|freez|deactivat)\w*.{0,30}(account|card|number|ssn)/i,
+      /(membership|subscription|account|service|policy).{0,30}(will be |is being |gets? )?(canceled|cancelled|terminated|closed)/i,
       /payment (failed|declined|didn'?t go through)|suspicious (charge|activity|transaction|login)|unusual (login|activity|sign[- ]?in)|unauthori[sz]ed (charge|purchase|transaction)/i,
       /(medicare|social security|insurance) card.{0,20}(expir|replace|upgrade)|new (medicare|social security) card/i,
       /benefits.{0,30}(stop|end|cut)/i,
@@ -101,7 +102,7 @@ export const RED_FLAGS: RedFlag[] = [
     label: "Pushes you to act right now",
     why: "Real organizations give you time. Rushing you is how scammers stop you from thinking or asking someone.",
     weight: 20,
-    patterns: [/right now|immediately|urgent|within (the next )?\d+ (minutes|hours)|in \d+ (minutes|hours)|today or|last chance|final notice|now to avoid|expires? today|act fast|as soon as possible|today unless|by (tonight|end of (the )?day)|press 1|press one|final notice/i],
+    patterns: [/right now|immediately|urgent|within (the next )?\d+ (minutes|hours)|in \d+ (minutes|hours)|today or|last chance|final notice|now to avoid|expires? today|act fast|as soon as possible|today unless|by (tonight|end of (the )?day)|press 1|press one|final notice|(decide|answer|act) (by |before )?(tonight|today|now)|limited time|only today/i],
   },
   {
     id: "threat",
@@ -141,7 +142,7 @@ export const RED_FLAGS: RedFlag[] = [
     weight: 25,
     supporting: true,
     patterns: [
-      /grand(son|daughter|child|kid)|nephew|niece/i,
+      /grand(son|daughter|child|kid)|nephew|niece|\bmy (son|daughter)\b/i,
       /it'?s me,? (grandma|grandpa|nana|mom|dad)/i, /hi,? (grandma|grandpa|nana|mom|dad)\b/i,
       /lost my phone|new (phone )?number|changed my number/i,
     ],
@@ -169,6 +170,27 @@ export const RED_FLAGS: RedFlag[] = [
       /(let|allow|give) (them|him|her|the caller) (fix|access|into|control|connect)/i,
       /\b(they|he|she|caller|someone|technician)\b.{0,30}\b(fix|repair|clean)\w*.{0,15}(computer|pc|laptop|device|it) (remotely|for me)/i,
       /(fix|repair|clean)\w* (it|the computer|my computer|your computer) remotely/i,
+    ],
+  },
+  {
+    id: "investment",
+    label: "Investment that sounds too good to be true",
+    why: "Real investments never promise to double your money fast. 'Guaranteed' returns and a deadline are classic scam signs.",
+    weight: 45,
+    patterns: [
+      /double[sd]? (your|my|the) money|guaranteed (return|profit|income)|risk[- ]free (investment|return)|can'?t lose|get rich/i,
+      /(great|amazing|special|exclusive|secret) investment|investment (opportunity|club)|trading (platform|app)|forex/i,
+      /\d+ ?% (a|per|every) (day|week|month)|returns? (in|within) (a|one|\d+) (day|week)/i,
+    ],
+  },
+  {
+    id: "emergency_payment",
+    label: "Emergency that needs your card right away",
+    why: "Hospitals and police don't call asking for your card to start treatment or release someone. Call your family member directly.",
+    weight: 45,
+    patterns: [
+      /(hospital|doctor|surgery|surgeon|emergency room|ambulance).{0,80}(credit card|debit card|card number|bank (card|details|account)|wire|send (money|\$)|pay (now|right away|immediately)|deposit)/i,
+      /(credit card|debit card|card number|payment|deposit).{0,40}(start|begin|before).{0,20}(surgery|treatment|operation)/i,
     ],
   },
   {

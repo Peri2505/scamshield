@@ -18,7 +18,7 @@ const pick = <T extends string>(xs: T[]): T => {
 
 /** Most telling reason first. */
 const PRIORITY = [
-  "safe_account", "grandparent", "romance", "gift_cards", "remote_access", "crypto_or_wire", "delivery_toll",
+  "safe_account", "emergency_payment", "grandparent", "romance", "investment", "gift_cards", "remote_access", "crypto_or_wire", "delivery_toll",
   "door_to_door", "asks_for_ids", "threat", "account_problem", "verify_info", "secrecy", "prize", "lookalike_site",
   "unsolicited_link", "family_claim", "payment_demand", "urgency",
 ];
@@ -56,6 +56,8 @@ const FLAG_SPEECH: Record<string, string> = {
   delivery_toll: "Those little toll and package fee texts are one of the most common scams right now.",
   romance: "I know this one is hard. But someone you've only met online who asks for money is almost always a scammer.",
   family_claim: "Scammers often pretend to be family, sometimes from a new number.",
+  investment: "Real investments never promise to double your money quickly. That promise, plus a deadline, is a classic scam.",
+  emergency_payment: "Hospitals don't call asking for your card before helping someone. Please call your family member directly.",
   door_to_door: "Real workers don't show up unannounced and ask for cash. It's okay not to open the door.",
 };
 
@@ -108,7 +110,7 @@ export function composeSpeech(s: SpeechInput): string {
   } else if (s.official?.website) {
     const site = s.official.website.split(" ")[0];
     parts.push(`If you'd like to check, go to ${site} yourself, instead of using the ${s.written ? "message" : "number they gave you"}.`);
-  } else if (s.flagIds.includes("grandparent") || s.flagIds.includes("family_claim")) {
+  } else if (s.flagIds.includes("grandparent") || s.flagIds.includes("family_claim") || s.flagIds.includes("emergency_payment")) {
     parts.push("If you're worried, hang up and call them back on the number you already have for them.");
   } else {
     parts.push(s.written ? "It's safest to just delete it." : "It's okay to just hang up.");

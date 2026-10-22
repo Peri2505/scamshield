@@ -79,18 +79,22 @@ In local mode the analysis uses the playbook, memory is in-process, and family a
 
 ## Turn on AWS (Bedrock + DynamoDB + SNS)
 
-1. Use an AWS account on the **Free plan** (credits, no surprise charges) and configure credentials (`aws configure`).
-2. In the Bedrock console, enable **Amazon Nova Lite** in your region (or set `BEDROCK_MODEL_ID`).
-3. Create the table and alert topic:
+About 15 minutes, no local AWS tools needed:
+
+1. Create an AWS account on the **Free plan** (credits only, so no surprise charges). Bedrock models such as Amazon Nova are enabled by default.
+2. In the AWS console, open **CloudShell** (the `>_` icon), choose **Actions → Upload file**, and upload `infra/cloudshell-setup.sh`. Then run:
    ```bash
-   ./infra/setup-aws.sh family.member@example.com
+   bash cloudshell-setup.sh family.member@example.com
    ```
-   Confirm the subscription email AWS sends.
-4. `cp .env.example .env`, paste the printed values, set `SCAMSHIELD_AWS=1`, and run `npm run dev`.
+   It creates the DynamoDB table (180-day TTL), the SNS topic with an email subscription, and a **least-privilege IAM user** (`scamshield-local`: Nova Lite only, this table only, this topic only). It checks Bedrock, then prints the lines for your `.env`.
+3. Confirm the subscription email AWS sends to the family member.
+4. On your computer: `cp .env.example .env`, paste the printed lines at the end, and run `npm run dev`. The header switches to **AWS mode**.
 
-The simulator header switches to **AWS mode**, and alerts arrive by email. If any AWS call fails, ScamShield **falls back** to the local path, so a demo never dies on stage.
+**Never commit `.env`** (it's in `.gitignore`). If any AWS call fails, ScamShield **falls back** to the local path, so the demo never breaks. Typical demo usage costs a few cents of Bedrock credits.
 
-Typical demo usage costs cents in Bedrock calls; DynamoDB on-demand and SNS email at this scale fall within free allowances.
+**Brand-new AWS accounts:** Bedrock may start with a daily token quota of 0 and answer `Too many tokens per day`. ScamShield detects this, **pauses Bedrock for an hour** (a circuit breaker, so answers stay instant) and keeps protecting the user with the scam playbook. DynamoDB and SNS keep working. To lift the quota, request an increase under **Service Quotas → Amazon Bedrock** or open a *Service limit increase* case in AWS Support.
+
+Prefer your own tooling? `infra/setup-aws.sh` creates just the table and topic with the AWS CLI on your machine.
 
 ## Connect to Alexa+
 
@@ -118,11 +122,11 @@ The server is **stateless** (a fresh MCP server per request), so it scales horiz
 npm test
 ```
 
-96 tests: redaction, playbook verdicts, conversational speech, the Bedrock merge logic (mocked), an end-to-end suite that talks to the real server over Streamable HTTP with the official MCP client (protocol negotiation, tool list, UI resource, repeat detection, privacy), and a detection benchmark.
+105 tests: redaction, playbook verdicts, conversational speech, the Bedrock merge logic (mocked), an end-to-end suite that talks to the real server over Streamable HTTP with the official MCP client (protocol negotiation, tool list, UI resource, repeat detection, privacy), and a detection benchmark.
 
 ### Detection benchmark
 
-`test/benchmark.test.ts` holds **46 real-world scam scripts and 30 ordinary messages** (toll and package texts, "safe account" bank scams, romance scams, fake renewals, door-to-door cash, grandparent scams from a "new number", plus everyday messages like "my grandson visited today" or "the pharmacy says my refill is ready"). The offline rules flag every scam and raise no false alarms on this set.
+`test/benchmark.test.ts` holds **49 real-world scam scripts and 35 ordinary messages** (toll and package texts, "safe account" bank scams, romance and fake-investment scams, "hospital emergency" card requests, fake renewals, door-to-door cash, grandparent scams from a "new number", plus everyday messages like "my grandson visited today" or "the pharmacy says my refill is ready"). The offline rules flag every scam and raise no false alarms on this set.
 
 To keep ourselves honest: the rules were tuned while the set was being built. On the last batch, written after tuning and checked before any further changes, the offline rules scored **16/18 with zero false alarms**. Keyword rules will always miss some brand-new wording, which is why AWS mode adds Amazon Bedrock as a second opinion.
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { analyzeWithRules } from "../src/analyzer/rules.js";
 
 /**
- * Detection benchmark: 46 real-world scam scripts and 30 ordinary messages
+ * Detection benchmark: 49 real-world scam scripts and 35 ordinary messages
  * an older adult might ask about. Written from FTC / AARP / FBI IC3 scam patterns.
  * This runs the offline rules only. With AWS on, Amazon Bedrock adds a second opinion
  * for wording the rules have never seen.
@@ -53,7 +53,10 @@ const SCAMS: string[] = [
   "Text: Final notice, your Social Security number has been suspended, call immediately",
   "A friend I met online wants me to receive a package for him and send it overseas",
   "They said I have a refund from the IRS and need my bank routing number to deposit it",
-  "A man knocked on my door saying he's from the water company and needs to come inside to test, cash payment only"
+  "A man knocked on my door saying he's from the water company and needs to come inside to test, cash payment only",
+  "A woman from my church group says she has a great investment that doubles your money in a week, but I have to decide tonight",
+  "A man said he's from the hospital and my son was in a crash, they need my credit card to start surgery",
+  "Someone called saying my Costco membership will be canceled unless I confirm the card on file",
 ];
 
 const ORDINARY: string[] = [
@@ -86,7 +89,12 @@ const ORDINARY: string[] = [
   "The bank called back after I asked them about my statement",
   "Medicare sent my new plan booklet in the mail",
   "My nephew is visiting for Thanksgiving",
-  "CVS texted that my prescription is ready for pickup"
+  "CVS texted that my prescription is ready for pickup",
+  "My neighbor asked me to sign for her package while she is at work",
+  "My daughter called and asked if I want to come for dinner on Sunday",
+  "My son is having surgery next week, the hospital said I should bring my insurance card",
+  "The doctor office called to say my copay for the visit is $20",
+  "The hospital mailed a bill for my knee surgery",
 ];
 
 describe("benchmark: scams are flagged", () => {

@@ -4,8 +4,23 @@ import { RED_FLAGS } from "./patterns.js";
 
 let client: BedrockRuntimeClient | undefined;
 function getClient() {
-  client ??= new BedrockRuntimeClient({ region: config.awsRegion });
+  // One quick attempt and a short timeout: a safety assistant must answer fast.
+  client ??= new BedrockRuntimeClient({ region: config.awsRegion, maxAttempts: 1, requestHandler: { requestTimeout: 4000 } as never });
   return client;
+}
+
+/**
+ * Circuit breaker. If Bedrock is throttled or over quota (e.g. brand-new AWS accounts
+ * start with a daily token quota of 0), stop calling it for a while instead of making
+ * every answer wait for an error. The scam playbook keeps working in the meantime.
+ */
+let pausedUntil = 0;
+export function bedrockPausedUntil() {
+  return pausedUntil;
+}
+function pauseFor(ms: number, reason: string) {
+  pausedUntil = Date.now() + ms;
+  console.warn(`[bedrock] paused for ${Math.round(ms / 60000)} min (${reason}); using the scam playbook meanwhile`);
 }
 
 export interface BedrockOpinion {
@@ -29,6 +44,7 @@ Be decisive: payment by gift card/crypto/wire, requests for ID numbers or one-ti
 
 /** Ask Amazon Bedrock (Converse API) for a second opinion. Returns undefined on any failure. */
 export async function analyzeWithBedrock(redactedText: string): Promise<BedrockOpinion | undefined> {
+  if (Date.now() < pausedUntil) return undefined;
   try {
     const res = await getClient().send(
       new ConverseCommand({
@@ -53,7 +69,12 @@ export async function analyzeWithBedrock(redactedText: string): Promise<BedrockO
           : undefined,
     };
   } catch (err) {
-    console.warn("[bedrock] falling back to rules:", (err as Error).message);
+    const e = err as Error & { name?: string };
+    const msg = e.message ?? String(err);
+    if (/per day/i.test(msg)) pauseFor(60 * 60_000, "daily token quota reached");
+    else if (e.name === "ThrottlingException" || /too many|throttl|rate exceeded/i.test(msg)) pauseFor(60_000, "throttled");
+    else if (e.name === "AccessDeniedException") pauseFor(10 * 60_000, "access denied");
+    else console.warn("[bedrock] falling back to rules:", msg);
     return undefined;
   }
 }
